@@ -1,25 +1,182 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template"
+author: "NHartley"
+date: "2024-02-12"
+output: html_document
 ---
 
+## R Markdown
 
-## Loading and preprocessing the data
+This is the markdown file for "Reproducible Research: Course Project 1"
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+> Q1: Code for reading in the dataset
+
+```{r}
+steps_df <- read.csv("C:\\Users\\nhart\\OneDrive\\Desktop\\Johns Hopkins\\Reproducible Research\\Course Project 1\\activity.csv")
+
+# Load the ggplot2 package
+library(ggplot2)
+```
+> Q2: Histogram- total number of steps taken each day
+
+```{r}
+# Filter out NA values in the steps column
+steps_df_filtered <- steps_df[!is.na(steps_df$steps), ]
+
+# Convert the "date" column to Date object
+steps_df_filtered$date <- as.Date(steps_df_filtered$date)
+
+# Extract weekday names from the date column
+steps_df_filtered$weekday <- weekdays(steps_df_filtered$date)
+
+# Reorder the weekdays
+steps_df_filtered$weekday <- factor(steps_df_filtered$weekday, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+# Create the histogram
+ggplot(steps_df_filtered, aes(x = weekday)) +
+  geom_bar(stat = "count", fill = "blue", color = "black") +
+  labs(title = "Histogram of Steps Per Day by Weekday", x = "Weekday", y = "Number of Steps") +
+  ylim(0, max(table(steps_df_filtered$weekday)))  # Adjust y-axis limits
+```
+> Q3: Mean & Median steps per day
+
+```{r}
+#Load the dplyr package for data manipulation
+library(dplyr)
+
+# Remove NA values from the steps column
+steps_df_filtered <- steps_df %>% 
+  filter(!is.na(steps))
+
+# Convert the "date" column to Date object
+steps_df_filtered$date <- as.Date(steps_df_filtered$date)
+
+# Extract weekday names from the date column
+steps_df_filtered$weekday <- weekdays(steps_df_filtered$date)
+
+# Calculate mean and median steps per weekday
+steps_summary <- steps_df_filtered %>%
+  group_by(weekday) %>%
+  summarise(mean_steps = mean(steps),
+            median_steps = median(steps))
+
+# Print the summary
+print(steps_summary)
+```
+> Q4: Avg number of steps taken
+
+```{r}
+# Load the ggplot2 package
+library(ggplot2)
+
+# Convert the "date" column to Date object
+steps_df$date <- as.Date(steps_df$date)
+
+# Extract weekday names from the date column
+steps_df$weekday <- weekdays(steps_df$date)
+
+# Aggregate data to calculate average steps per weekday
+weekday_avg_steps <- aggregate(steps ~ weekday, data = steps_df, FUN = mean)
+
+# Reorder the weekdays
+weekday_avg_steps$weekday <- factor(weekday_avg_steps$weekday, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+# Create time series plot
+ggplot(weekday_avg_steps, aes(x = weekday, y = steps, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "blue") +  # Add points for better visibility of individual data points
+  labs(title = "Average Number of Steps Per Day by Weekday",
+       x = "Weekday",
+       y = "Average Steps")
+```
+> Q5: Max-steps - 5 minute interval
+
+```{r}
+# Load the dplyr package for data manipulation
+library(dplyr)
+
+# Group data by interval and calculate average steps for each interval
+interval_avg_steps <- steps_df %>%
+  group_by(interval) %>%
+  summarise(avg_steps = mean(steps, na.rm = TRUE))
+
+# Find the interval with the highest average number of steps
+max_interval <- interval_avg_steps %>%
+  filter(avg_steps == max(avg_steps))
+
+# Print the result
+print(max_interval)
+```
+> Q6: Replace NAs
+
+```{r}
+# Load the tidyr package
+library(tidyr)
+
+# Replace NA values with the mean of the respective column
+steps_df_imputed <- steps_df %>%
+  mutate(steps = ifelse(is.na(steps), mean(steps, na.rm = TRUE), steps))
+
+# Convert the "date" column to Date object
+steps_df_filtered$date <- as.Date(steps_df_filtered$date)
+
+# Extract weekday names from the date column
+steps_df_filtered$weekday <- weekdays(steps_df_filtered$date)
+
+# Reorder the weekdays
+steps_df_filtered$weekday <- factor(steps_df_filtered$weekday, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+# Create the histogram
+ggplot(steps_df_filtered, aes(x = weekday)) +
+  geom_bar(stat = "count", fill = "blue", color = "black") +
+  labs(title = "Histogram of Steps Per Day by Weekday", x = "Weekday", y = "Number of Steps") +
+  ylim(0, max(table(steps_df_filtered$weekday)))  # Adjust y-axis limits
+```
+> Q7: Histogram - adj total steps
+
+```{r}
+# Load the tidyr package
+library(tidyr)
+
+# Replace NA values with the mean of the respective column
+steps_df_imputed <- steps_df %>%
+  mutate(steps = ifelse(is.na(steps), mean(steps, na.rm = TRUE), steps))
+```
+> Q8: Panel plot comparison
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Convert the "date" column to Date object
+steps_df$date <- as.Date(steps_df$date)
+
+# Extract weekday names from the date column
+steps_df$weekday <- weekdays(steps_df$date)
+
+# Categorize data into weekdays and weekends
+steps_df <- steps_df %>%
+  mutate(day_type = ifelse(weekdays(date) %in% c("Saturday", "Sunday"), "Weekend", "Weekday"))
+
+# Group data by day_type and interval, calculate average steps for each combination
+interval_avg_steps <- steps_df %>%
+  group_by(day_type, interval) %>%
+  summarise(avg_steps = mean(steps, na.rm = TRUE))
+
+# Create separate plots for weekdays and weekends
+ggplot(interval_avg_steps, aes(x = interval, y = avg_steps, color = day_type)) +
+  geom_line() +
+  labs(title = "Average Number of Steps per 5-Minute Interval",
+       x = "Interval",
+       y = "Average Steps",
+       color = "Day Type") +
+  facet_wrap(~ day_type, scales = "free") +
+  theme_minimal()
+```
+> Q9: full R code is above
 
 
-
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
